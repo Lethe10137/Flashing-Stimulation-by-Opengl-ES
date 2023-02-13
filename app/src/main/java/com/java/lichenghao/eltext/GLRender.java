@@ -38,7 +38,6 @@ public class GLRender implements GLSurfaceView.Renderer  {
     private float[] mVPMatrix = new float[16];
 
     private GLSquare[] squares = new GLSquare[40];
-    private GLSquare[] shade_squares = new GLSquare[40];
     private GLCircle[] circles = new GLCircle[40];
 
     private String[] buttons = {"A", "B", "C", "D","E", "F", "G", "H","I", "J", "K", "L","M", "N", "O", "P",
@@ -65,7 +64,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
     public GLRender(Context context)  {
         super();
         this.context = context;                         // Save Specified Context
-        has_blocks = false;
+        has_blocks = true;
 
     }
 
@@ -79,7 +78,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
 
         // Load the font from file (set size + padding), creates the texture
         // NOTE: after a successful call to this the font is ready for rendering!
-        glText.load( "roboto.ttf", 100, 0, 0 );  // Create Font
+        glText.load( "visible_space.ttf", 100, 0, 0 );  // Create Font
         Log.d(TAG,"Create Font!");
 
 
@@ -111,15 +110,6 @@ public class GLRender implements GLSurfaceView.Renderer  {
                        0.5f * (i+j)
                 );
 
-                shade_squares[i*8+j] = new GLSquare();
-                shade_squares[i*8+j].set(
-                        x_offset + step * j + 0.05f * step,
-                        1 - step * (i+1) + 0.05f * step,
-                        0,
-                        margin * ratio_of_block_and_margin - 0.1f * step,
-                        0
-                );
-
                 circles[i*8+j] = new GLCircle(10);
                 circles[i*8+j].set(x_offset + step * j + 0.5f * block,
                         1 - step * (i+1) - 0.5f * margin,
@@ -130,7 +120,6 @@ public class GLRender implements GLSurfaceView.Renderer  {
               characters_f[i * 8 + j] = 8.0f+ (j+0.2f*i);
               characters_p[i * 8 + j] = 0.5f * (i+j);
 
-//
             }
         }
     }
@@ -145,6 +134,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
         Matrix.multiplyMM(mVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
         glText.begin( 0.0f, 0.0f, 0.0f, 1.0f, mVPMatrix );         // Begin Text Rendering (Set Color BLUE)
         for(int i = 0; i < 40 ; i++){
+            if(i == 36)continue;
             glText.draw(buttons[i],characters_x[i] * height ,characters_y[i]  * height );
         }
         glText.end();                                   // End Text Rendering
@@ -154,18 +144,18 @@ public class GLRender implements GLSurfaceView.Renderer  {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         //依次绘制
         for(int i = 0; i< 40 ; i++){
-            squares[i].draw(ratio, begin_time, (i == red));
-            shade_squares[i].draw(ratio, -1, false);
+//            squares[i].draw(ratio, begin_time, (i == red));
+
             if(i==red)circles[i].draw(ratio, true);
         }
 
         Matrix.multiplyMM(mVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
 
+        // Begin Text Rendering
         glText.begin( 0.0f, 0.0f, 0.0f, 1.0f, mVPMatrix );
-        long time =  System.nanoTime();// Begin Text Rendering (Set Color BLUE)
+        long time =  System.nanoTime();
         for(int i = 0; i < 40 ; i++){
             if(time > begin_time ){
-
                 long t = time - begin_time;
                 float k = (float)(
                         Math.sin((characters_p[i] + t * 0.001 * 0.001 * 0.002  * characters_f[i]
@@ -176,13 +166,15 @@ public class GLRender implements GLSurfaceView.Renderer  {
             }
             glText.draw(buttons[i],characters_x[i] * height ,characters_y[i]  * height );
         }
-        glText.end();                                   // End Text Rendering                                 // End Text Rendering
+        glText.end();                                             // End Text Rendering
     }
 
     public void onDrawFrame(GL10 unused) {
         if(has_blocks){
             drawFlashingBLocks();
         }else{
+            buttons[36] = " ";
+            //The real space (ASCII 0x20) in the font we use is a hollow square.
             drawFlashingLetters();
         }
     }
