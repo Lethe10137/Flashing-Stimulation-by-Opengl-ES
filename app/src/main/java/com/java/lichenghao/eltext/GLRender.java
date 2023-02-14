@@ -1,23 +1,13 @@
 package com.java.lichenghao.eltext;
 
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.opengl.GLSurfaceView;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import android.opengl.GLES20;
-
-import java.nio.ByteBuffer;
-
-import javax.microedition.khronos.egl.EGLConfig;
-import javax.microedition.khronos.opengles.GL10;
 
 import android.content.Context;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.util.Log;
 
@@ -50,7 +40,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
     private float[] characters_p = new float[40];
 
     private float ratio = 1.0f;
-    private long begin_time;
+    private long beginTime;
     private int red = -1;
     private boolean has_blocks;
 
@@ -58,14 +48,18 @@ public class GLRender implements GLSurfaceView.Renderer  {
     public void setRed(int n){
         red = n;
     }
-    public void setBegin_time(long time){
-        begin_time = time;
+    public int getRed(){return red;}
+    public void setBeginTime(long time){
+        beginTime = time;
     }
+    public long getBeginTime(){return beginTime;}
+    public void setDoBlocksFlash(boolean doBlocksFlash){has_blocks = doBlocksFlash;}
+    public boolean getDoBlocksFlash(){return has_blocks;}
+
     public GLRender(Context context)  {
         super();
         this.context = context;                         // Save Specified Context
         has_blocks = true;
-
     }
 
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
@@ -86,7 +80,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
-        begin_time = System.nanoTime();
+        beginTime = System.nanoTime();
 
         int blocks_in_column = 5;
         int blocks_in_row = 8;
@@ -128,7 +122,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         //依次绘制
         for(int i = 0; i< 40 ; i++){
-            squares[i].draw(ratio, begin_time, (i == red));
+            squares[i].draw(ratio, beginTime, (i == red));
             if(i==red)circles[i].draw(ratio, true);
         }
         Matrix.multiplyMM(mVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
@@ -155,8 +149,8 @@ public class GLRender implements GLSurfaceView.Renderer  {
         glText.begin( 0.0f, 0.0f, 0.0f, 1.0f, mVPMatrix );
         long time =  System.nanoTime();
         for(int i = 0; i < 40 ; i++){
-            if(time > begin_time ){
-                long t = time - begin_time;
+            if(time > beginTime){
+                long t = time - beginTime;
                 float k = (float)(
                         Math.sin((characters_p[i] + t * 0.001 * 0.001 * 0.002  * characters_f[i]
                                 ) * 3.1415926f) + 1) /2;
