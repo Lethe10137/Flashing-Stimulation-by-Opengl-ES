@@ -41,14 +41,18 @@ public class GLRender implements GLSurfaceView.Renderer  {
 
     private float ratio = 1.0f;
     private long beginTime;
-    private int red = -1;
-    private boolean has_blocks;
+    private int redBlock = 18;
+    private int redPot = 8;
+    private boolean has_blocks = false;
+    private boolean render_noting = false;
 
 
-    public void setRed(int n){
-        red = n;
+    public void setRedBlock(int n){
+        redBlock = n;
     }
-    public int getRed(){return red;}
+    public int getRedBlock(){return redBlock;}
+    public void setRedPot(int redPot) {this.redPot = redPot;}
+    public int getRedPot() {return redPot;}
     public void setBeginTime(long time){
         beginTime = time;
     }
@@ -59,7 +63,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
     public GLRender(Context context)  {
         super();
         this.context = context;                         // Save Specified Context
-        has_blocks = true;
+
     }
 
     public void onSurfaceCreated(GL10 unused, EGLConfig config) {
@@ -80,7 +84,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
-        beginTime = System.nanoTime();
+        beginTime = System.nanoTime() + 5_000_000_000L;
 
         int blocks_in_column = 5;
         int blocks_in_row = 8;
@@ -122,8 +126,8 @@ public class GLRender implements GLSurfaceView.Renderer  {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         //依次绘制
         for(int i = 0; i< 40 ; i++){
-            squares[i].draw(ratio, beginTime, (i == red));
-            if(i==red)circles[i].draw(ratio, true);
+            squares[i].draw(ratio, beginTime, (i == redBlock));
+            if(i== redPot)circles[i].draw(ratio, true);
         }
         Matrix.multiplyMM(mVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
         glText.begin( 0.0f, 0.0f, 0.0f, 1.0f, mVPMatrix );         // Begin Text Rendering (Set Color BLUE)
@@ -137,18 +141,16 @@ public class GLRender implements GLSurfaceView.Renderer  {
     private void drawFlashingLetters(){
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         //依次绘制
-        for(int i = 0; i< 40 ; i++){
-//            squares[i].draw(ratio, begin_time, (i == red));
-
-            if(i==red)circles[i].draw(ratio, true);
-        }
+        if(redPot >= 0 && redPot < 40)circles[redPot].draw(ratio, true);
+        if(redBlock >= 0 && redBlock < 40)squares[redBlock].draw(ratio, -1, true);
 
         Matrix.multiplyMM(mVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
 
         // Begin Text Rendering
         glText.begin( 0.0f, 0.0f, 0.0f, 1.0f, mVPMatrix );
-        long time =  System.nanoTime();
+        long time;
         for(int i = 0; i < 40 ; i++){
+            time = System.nanoTime();
             if(time > beginTime){
                 long t = time - beginTime;
                 float k = (float)(
@@ -156,7 +158,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
                                 ) * 3.1415926f) + 1) /2;
                 glText.setColor(k,k,k,0);
             }else{
-                glText.setColor(0.0f,0.0f,0.0f,0.0f);
+                glText.setColor(1.0f,1.0f,1.0f,0.0f);
             }
             glText.draw(buttons[i],characters_x[i] * height ,characters_y[i]  * height );
         }
@@ -164,6 +166,12 @@ public class GLRender implements GLSurfaceView.Renderer  {
     }
 
     public void onDrawFrame(GL10 unused) {
+
+        if(render_noting){
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+            return;
+        }
+
         if(has_blocks){
             drawFlashingBLocks();
         }else{
@@ -203,5 +211,10 @@ public class GLRender implements GLSurfaceView.Renderer  {
                 useForOrtho/2, 0.1f, 100f);
 
         Log.d(TAG,"onSurfaceChanged end");
+    }
+
+
+    public void setRender_noting(boolean render_noting) {
+        this.render_noting = render_noting;
     }
 }

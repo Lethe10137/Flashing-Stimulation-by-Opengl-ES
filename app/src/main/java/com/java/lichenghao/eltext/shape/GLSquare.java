@@ -1,6 +1,8 @@
 package com.java.lichenghao.eltext.shape;
 
 
+import static android.opengl.GLES20.glLineWidth;
+
 import android.opengl.GLES20;
 import android.util.Log;
 import android.widget.GridLayout;
@@ -33,6 +35,7 @@ public class GLSquare {
                     " }";
 
     private FloatBuffer vertexBuffer;  //顶点坐标数据要转化成FloatBuffer格式
+    private FloatBuffer outerVertexBuffer;  //顶点坐标数据要转化成FloatBuffer格式
 
 
 
@@ -44,10 +47,20 @@ public class GLSquare {
 
     private float squareCoords[] = {
             0f, 1f, 0f, // top left
-            0f, 0f, 0f, // bottom left
             1f, 1f, 0f,  // top right
+            0f, 0f, 0f, // bottom left
             1f, 0f, 0f  // bottom right
     };
+
+    private final float outerSize = 0.05f;
+
+    private float outerSquareCoords[] = {
+            1 + outerSize, 1 + outerSize, 0f,  // top right
+            -outerSize, 1 + outerSize, 0f, // top left
+            -outerSize, -outerSize, 0f, // bottom left
+            1 + outerSize, -outerSize, 0f  // bottom right
+    };
+
 
 
 
@@ -102,11 +115,18 @@ public class GLSquare {
             squareCoords[3*i] += x;
             squareCoords[3*i+1] *= size;
             squareCoords[3*i+1] += y;
+            outerSquareCoords[3*i] *= size;
+            outerSquareCoords[3*i] += x;
+            outerSquareCoords[3*i+1] *= size;
+            outerSquareCoords[3*i+1] += y;
         }
+
+
 
 
         /** 1、数据转换，顶点坐标数据float类型转换成OpenGL格式FloatBuffer，int和short同理*/
         vertexBuffer = GLUtil.floatArray2FloatBuffer(squareCoords);
+        outerVertexBuffer = GLUtil.floatArray2FloatBuffer(outerSquareCoords);
 
 
         /** 2、加载编译顶点着色器和片元着色器*/
@@ -132,8 +152,6 @@ public class GLSquare {
 
     public void draw(float ratio, long beginTime, boolean isRed) {
 
-
-
         long t = System.nanoTime() - beginTime;
         if(beginTime == 0){//调试初相
             t = 0;
@@ -151,17 +169,11 @@ public class GLSquare {
             k = 1;
         }
 
-        if(isRed){
-            mColor[0] = (float) k;
-            mColor[1] = 0.0f;
-            mColor[2] = 0.0f;
-        }else{
-            mColor[0] = (float) k;
-            mColor[1] = (float) k;
-            mColor[2] = (float) k;
-        }
+        mColor[0] = (float) k;
+        mColor[1] = (float) k;
+        mColor[2] = (float) k;
 
-//
+
 
         mvpMatrix[0] = mvpMatrix[5] / ratio;
 
@@ -191,6 +203,29 @@ public class GLSquare {
 
         /** 3.绘制正方形，4个顶点*/
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, vertexCount);
+
+
+        if(isRed){
+            //准备红色外框坐标数据
+            GLES20.glVertexAttribPointer(vPositionHandle, COORDS_PER_VERTEX,
+                    GLES20.GL_FLOAT, false,
+                    vertexStride, outerVertexBuffer);
+            // 设置绘制正方形的颜色，给vColor 这个变量赋值
+            float red[] = {1f, 0f, 0f, 0f};
+
+            GLES20.glUniform4fv(vColorHandle, 1, red, 0);
+
+            /** 3.绘制外边框*/
+            glLineWidth(5);
+            GLES20.glDrawArrays(GLES20.GL_LINE_LOOP, 0, vertexCount);
+        }
+
+
+
+
+
+
+
 
 
         // 禁用顶点数组（好像不禁用也没啥问题）
