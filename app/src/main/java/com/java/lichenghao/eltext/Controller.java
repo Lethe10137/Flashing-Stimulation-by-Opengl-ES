@@ -8,4 +8,5 @@ public interface Controller {
     void setRedBlock(int blockId);
     void setRedPoint(int blockId);
     void GLSwitch(boolean turnON);
+    void HideExtraViews(boolean hide);
 }

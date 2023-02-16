@@ -30,10 +30,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
     private GLSquare[] squares = new GLSquare[40];
     private GLCircle[] circles = new GLCircle[40];
 
-    private String[] buttons = {"A", "B", "C", "D","E", "F", "G", "H","I", "J", "K", "L","M", "N", "O", "P",
-            "Q", "R", "S", "T","U", "V", "W", "X","Y", "Z", "0", "1","2", "3", "4", "5",
-            "6", "7", "8", "9"," ", ",", ".", "?"};
-
+    String[] buttons = KeyBoardData.buttons;
     private float[] characters_x = new float[40];
     private float[] characters_y = new float[40];
     private float[] characters_f = new float[40];
@@ -43,8 +40,8 @@ public class GLRender implements GLSurfaceView.Renderer  {
     private long beginTime;
     private int redBlock = 18;
     private int redPot = 8;
-    private boolean has_blocks = false;
-    private boolean render_noting = false;
+    private boolean has_blocks = true;
+    private boolean render_noting = true;
 
 
     public void setRedBlock(int n){

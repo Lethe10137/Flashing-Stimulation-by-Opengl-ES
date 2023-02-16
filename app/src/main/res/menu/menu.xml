@@ -9,7 +9,7 @@
         android:title="Change Mode"/>
 
     <item
-        android:id="@+id/action_bar_length"
-        android:title="Adjust Text Display Max Length"/>
+        android:id="@+id/back"
+        android:title="Back to Home"/>
 
 </menu>

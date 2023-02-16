@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -21,13 +22,128 @@ import java.util.Random;
 
 import javax.microedition.khronos.opengles.GL;
 
-public class MainActivity extends AppCompatActivity implements Controller{
+public class MainActivity extends AppCompatActivity {
 
     GLSurfaceView glSurfaceView;
     GLRender glRender;
     StringBuffer upperTextContent = new StringBuffer();
     TextView upperText;
+    TrainController trainController = null;
+    private int mode = 0; //0 home 1 train 2 test
     final String TAG = "MainActivity";
+
+    Controller controller = new Controller() {
+        @Override
+        public void setAppTitle(String title) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    setTitle(title);
+                }
+            });
+        }
+
+        @Override
+        public void setUpperText(String text) {
+            if(upperTextContent == null){
+                Log.e("TAG", "null upperTextContent!!");
+                return;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    upperTextContent = new StringBuffer(text);
+                    upperText.setText(upperTextContent);
+                }
+            });
+        }
+
+        @Override
+        public void appendUpperText(Character character) {
+            if(upperTextContent == null){
+                Log.e("TAG", "null upperTextContent!!");
+                return;
+            }
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    upperTextContent.append(character);
+                    upperText.setText(upperTextContent);
+                }
+            });
+        }
+
+        @Override
+        public void setBeginTime(long beginTime) {
+            if(glRender == null){
+                Log.e("TAG", "null glRenderer!!");
+                return;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    glRender.setBeginTime(beginTime);
+                }
+            });
+        }
+
+        @Override
+        public void setRedBlock(int blockId) {
+            if(glRender == null){
+                Log.e("TAG", "null glRenderer!!");
+                return;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    glRender.setRedBlock(blockId);
+                }
+            });
+        }
+
+        @Override
+        public void setRedPoint(int blockId) {
+            if(glRender == null){
+                Log.e("TAG", "null glRenderer!!");
+                return;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    glRender.setRedPot(blockId);
+                }
+            });
+        }
+
+        @Override
+        public void GLSwitch(boolean turnON) {
+            if(glRender == null){
+                Log.e("TAG", "null glRenderer!!");
+                return;
+            }
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    glRender.setRender_noting(!turnON);
+                }
+            });
+        }
+
+        @Override
+        public void HideExtraViews(boolean hide) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if(hide){
+                        findViewById(R.id.extra_text).setVisibility(View.GONE);
+                    }else{
+                        findViewById(R.id.extra_text).setVisibility(View.VISIBLE);
+                    }
+                }
+            });
+        }
+    };
 //    int text_max_length = 150;
 //
 //
@@ -55,17 +171,38 @@ public class MainActivity extends AppCompatActivity implements Controller{
                 changeFlashingMode();
                 break;
             case R.id.connect:
-//                Toast.makeText(getApplicationContext(),R.string.app_name,Toast.LENGTH_SHORT).show();
-                findViewById(R.id.extra_text).setVisibility(View.GONE);
+                Toast.makeText(getApplicationContext(),"尚未实现",Toast.LENGTH_SHORT).show();
+//                findViewById(R.id.extra_text).setVisibility(View.GONE);
                 break;
 
-            case R.id.action_bar_length:
-                Toast.makeText(getApplicationContext(),"info",Toast.LENGTH_SHORT).show();
-                findViewById(R.id.extra_text).setVisibility(View.VISIBLE);
+            case R.id.back:
+//                Toast.makeText(getApplicationContext(),"info",Toast.LENGTH_SHORT).show();
+//                findViewById(R.id.extra_text).setVisibility(View.VISIBLE);
+                close();
                 break;
         }
         return super.onOptionsItemSelected(item);
     }
+
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event){
+        if (keyCode == KeyEvent.KEYCODE_BACK && mode != 0) {
+            close();
+            return false;
+        }
+        return super.onKeyDown(keyCode,event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event){
+        if (keyCode == KeyEvent.KEYCODE_BACK && mode != 0) {
+            close();
+            return false;
+        }
+        return super.onKeyUp(keyCode,event);
+    }
+
 
 
 
@@ -84,16 +221,37 @@ public class MainActivity extends AppCompatActivity implements Controller{
         findViewById(R.id.testButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(getApplicationContext(),"test",Toast.LENGTH_SHORT).show();
+//                Toast.makeText(getApplicationContext(),"test",Toast.LENGTH_SHORT).show();
+                if(mode != 0){
+                    close();
+                }
+                controller.HideExtraViews(true);
+                controller.GLSwitch(true);
+                controller.setUpperText("");
+                controller.setRedBlock(-1);
+                controller.setRedBlock(-1);
+                controller.setAppTitle("Testing");
+                controller.setBeginTime(System.nanoTime());
+                mode = 2;
             }
         });
+
         findViewById(R.id.trainButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(getApplicationContext(),"train",Toast.LENGTH_SHORT).show();
+                if(mode != 0){
+                    close();
+                }
+                if(trainController != null && trainController.getState() != Thread.State.TERMINATED){
+                    trainController.interrupt();
+                }
+                trainController = new TrainController(controller);
+                trainController.start();
+                mode = 1;
             }
         });
-//        show_text();
+
+
         upperText = findViewById(R.id.upperText);
     }
 
@@ -113,6 +271,20 @@ public class MainActivity extends AppCompatActivity implements Controller{
         }
     }
 
+    private void close(){
+        controller.HideExtraViews(false);
+        controller.GLSwitch(false);
+        controller.setUpperText("");
+        controller.setAppTitle("");
+        controller.setRedBlock(-1);
+        controller.setRedBlock(-1);
+        if(trainController != null && trainController.getState() != Thread.State.TERMINATED){
+            trainController.interrupt();
+            trainController = null;
+        }
+        mode = 0;
+    }
+
 
 //    @Override
 //    public boolean dispatchTouchEvent(MotionEvent ev) {
@@ -126,100 +298,5 @@ public class MainActivity extends AppCompatActivity implements Controller{
 //    }
 
 
-    @Override
-    public void setAppTitle(String title) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                setTitle(title);
-            }
-        });
-    }
 
-    @Override
-    public void setUpperText(String text) {
-        if(this.upperTextContent == null){
-            Log.e("TAG", "null upperTextContent!!");
-            return;
-        }
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                upperTextContent = new StringBuffer(text);
-                upperText.setText(upperTextContent);
-            }
-        });
-    }
-
-    @Override
-    public void appendUpperText(Character character) {
-        if(this.upperTextContent == null){
-            Log.e("TAG", "null upperTextContent!!");
-            return;
-        }
-
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                upperTextContent.append(character);
-                upperText.setText(upperTextContent);
-            }
-        });
-    }
-
-    @Override
-    public void setBeginTime(long beginTime) {
-        if(this.glRender == null){
-            Log.e("TAG", "null glRenderer!!");
-            return;
-        }
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                glRender.setBeginTime(beginTime);
-            }
-        });
-    }
-
-    @Override
-    public void setRedBlock(int blockId) {
-        if(this.glRender == null){
-            Log.e("TAG", "null glRenderer!!");
-            return;
-        }
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                glRender.setRedBlock(blockId);
-            }
-        });
-    }
-
-    @Override
-    public void setRedPoint(int blockId) {
-        if(this.glRender == null){
-            Log.e("TAG", "null glRenderer!!");
-            return;
-        }
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                glRender.setRedPot(blockId);
-            }
-        });
-    }
-
-    @Override
-    public void GLSwitch(boolean turnON) {
-        if(this.glRender == null){
-            Log.e("TAG", "null glRenderer!!");
-            return;
-        }
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                glRender.setRender_noting(!turnON);
-            }
-        });
-    }
 }
