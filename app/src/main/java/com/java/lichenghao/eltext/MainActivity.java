@@ -1,9 +1,7 @@
 package com.java.lichenghao.eltext;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.MotionEventCompat;
 
 import android.content.pm.ActivityInfo;
 import android.opengl.GLSurfaceView;
@@ -12,15 +10,15 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.WindowMetrics;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Random;
-
-import javax.microedition.khronos.opengles.GL;
+import com.java.lichenghao.eltext.control.Controller;
+import com.java.lichenghao.eltext.control.ControllerInterface;
+import com.java.lichenghao.eltext.control.StopController;
+import com.java.lichenghao.eltext.control.TestController;
+import com.java.lichenghao.eltext.control.TrainController;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,13 +26,37 @@ public class MainActivity extends AppCompatActivity {
     GLRender glRender;
     StringBuffer upperTextContent = new StringBuffer();
     TextView upperText;
-    TrainController trainController = null;
     private int mode = 0; //0 home 1 train 2 test
     final String TAG = "MainActivity";
 
-    Controller controller = new Controller() {
+    private volatile int lastControllerId = 0;
+    private volatile Controller lastController = null;
+
+    private Controller getController(int type){
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if(lastController != null){
+                    lastController.stopThread();
+                }
+                lastControllerId++;
+                if(type == 0){//train
+                    lastController = new TrainController(controllerInterface, lastControllerId);
+                }else if(type == 1){//test
+                    lastController = new TestController(controllerInterface, lastControllerId);
+                }else if(type == 2){//stop
+                    lastController = new StopController(controllerInterface, lastControllerId);
+                }
+
+            }
+        });
+        return lastController;
+    }
+
+    ControllerInterface controllerInterface = new ControllerInterface() {
         @Override
-        public void setAppTitle(String title) {
+        public void setAppTitle(String title, int id) {
+            if(id != lastControllerId)return;
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -44,7 +66,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void setUpperText(String text) {
+        public void setUpperText(String text, int id) {
+            if(id != lastControllerId)return;
             if(upperTextContent == null){
                 Log.e("TAG", "null upperTextContent!!");
                 return;
@@ -59,7 +82,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void appendUpperText(Character character) {
+        public void appendUpperText(Character character, int id) {
+            if(id != lastControllerId)return;
             if(upperTextContent == null){
                 Log.e("TAG", "null upperTextContent!!");
                 return;
@@ -75,7 +99,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void setBeginTime(long beginTime) {
+        public void setBeginTime(long beginTime, int id) {
+            if(id != lastControllerId)return;
             if(glRender == null){
                 Log.e("TAG", "null glRenderer!!");
                 return;
@@ -89,7 +114,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void setRedBlock(int blockId) {
+        public void setRedBlock(int blockId, int id) {
+            if(id != lastControllerId)return;
             if(glRender == null){
                 Log.e("TAG", "null glRenderer!!");
                 return;
@@ -103,7 +129,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void setRedPoint(int blockId) {
+        public void setRedPoint(int blockId, int id) {
+            if(id != lastControllerId)return;
             if(glRender == null){
                 Log.e("TAG", "null glRenderer!!");
                 return;
@@ -117,7 +144,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void GLSwitch(boolean turnON) {
+        public void GLSwitch(boolean turnON, int id) {
+            if(id != lastControllerId)return;
             if(glRender == null){
                 Log.e("TAG", "null glRenderer!!");
                 return;
@@ -131,7 +159,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void HideExtraViews(boolean hide) {
+        public void HideExtraViews(boolean hide, int id) {
+            if(id != lastControllerId)return;
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -144,10 +173,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
     };
-//    int text_max_length = 150;
-//
-//
-//
+
 //    private void show_text(){
 //        int textLength = ActionBarText.length();
 //        if(textLength > text_max_length){
@@ -225,13 +251,7 @@ public class MainActivity extends AppCompatActivity {
                 if(mode != 0){
                     close();
                 }
-                controller.HideExtraViews(true);
-                controller.GLSwitch(true);
-                controller.setUpperText("");
-                controller.setRedBlock(-1);
-                controller.setRedBlock(-1);
-                controller.setAppTitle("Testing");
-                controller.setBeginTime(System.nanoTime());
+                getController(1).start();
                 mode = 2;
             }
         });
@@ -242,11 +262,7 @@ public class MainActivity extends AppCompatActivity {
                 if(mode != 0){
                     close();
                 }
-                if(trainController != null && trainController.getState() != Thread.State.TERMINATED){
-                    trainController.interrupt();
-                }
-                trainController = new TrainController(controller);
-                trainController.start();
+                getController(0).start();
                 mode = 1;
             }
         });
@@ -272,16 +288,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void close(){
-        controller.HideExtraViews(false);
-        controller.GLSwitch(false);
-        controller.setUpperText("");
-        controller.setAppTitle("");
-        controller.setRedBlock(-1);
-        controller.setRedBlock(-1);
-        if(trainController != null && trainController.getState() != Thread.State.TERMINATED){
-            trainController.interrupt();
-            trainController = null;
-        }
+        getController(2).start();
         mode = 0;
     }
 

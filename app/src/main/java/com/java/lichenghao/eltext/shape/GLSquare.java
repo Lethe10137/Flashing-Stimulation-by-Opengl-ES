@@ -69,12 +69,6 @@ public class GLSquare {
 
     private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per mVertex
 
-    //颜色数组，rgba
-    private float[] mColor = {
-            0.0f, 1.0f, 1.0f, 1.0f,
-    };
-
-
 
 
     //当前绘制的顶点位置句柄
@@ -85,10 +79,6 @@ public class GLSquare {
     private int mMVPMatrixHandle;
     //这个可以理解为一个OpenGL程序句柄
     private  int mProgram;
-
-    private float frequency = 1.0f;
-
-    private float phase = 0;
 
     //变换矩阵
     private float[] mvpMatrix = {
@@ -102,14 +92,10 @@ public class GLSquare {
 
     }
 
-    public void set(float x , float y , float f, float size,  float _phase) {
+    public void set(float x , float y , float size) {
         // 坐标系：
         // 以区域高度为2个单位长度。中心为（0，0）.
         // 绘制左下为(x,y), 边长是高度的0.5*size倍的正方形
-        frequency = f;
-
-        phase = _phase;
-
         for(int i =0; i < vertexCount; i++){
             squareCoords[3*i] *= size;
             squareCoords[3*i] += x;
@@ -120,8 +106,6 @@ public class GLSquare {
             outerSquareCoords[3*i+1] *= size;
             outerSquareCoords[3*i+1] += y;
         }
-
-
 
 
         /** 1、数据转换，顶点坐标数据float类型转换成OpenGL格式FloatBuffer，int和short同理*/
@@ -150,31 +134,9 @@ public class GLSquare {
     }
 
 
-    public void draw(float ratio, long beginTime, boolean isRed) {
+    public void draw(float ratio, boolean isRed, float grey) {
 
-        long t = System.nanoTime() - beginTime;
-        if(beginTime == 0){//调试初相
-            t = 0;
-        }
-
-
-
-        double k = (Math.sin((phase + t * 0.001 * 0.001 * 0.002  * frequency )* 3.1415926f ) + 1) /2;
-
-        if(beginTime < 0){//显示黑色
-            k = 0;
-        }
-
-        if(t < 0 ){//开始闪烁之前
-            k = 1;
-        }
-
-        mColor[0] = (float) k;
-        mColor[1] = (float) k;
-        mColor[2] = (float) k;
-
-
-
+        float mColor[] = {grey, grey, grey, grey};
         mvpMatrix[0] = mvpMatrix[5] / ratio;
 
         // 将程序添加到OpenGL ES环境
@@ -219,15 +181,6 @@ public class GLSquare {
             glLineWidth(5);
             GLES20.glDrawArrays(GLES20.GL_LINE_LOOP, 0, vertexCount);
         }
-
-
-
-
-
-
-
-
-
         // 禁用顶点数组（好像不禁用也没啥问题）
         GLES20.glDisableVertexAttribArray(vPositionHandle);
     }

@@ -33,8 +33,10 @@ public class GLRender implements GLSurfaceView.Renderer  {
     String[] buttons = KeyBoardData.buttons;
     private float[] characters_x = new float[40];
     private float[] characters_y = new float[40];
-    private float[] characters_f = new float[40];
-    private float[] characters_p = new float[40];
+    
+    private float[] frequency = new float[40];
+    private float[] phase = new float[40];
+
 
     private float ratio = 1.0f;
     private long beginTime;
@@ -91,8 +93,6 @@ public class GLRender implements GLSurfaceView.Renderer  {
         float step = block + margin;
         float x_offset = - (blocks_in_row / 2) * block - (blocks_in_row / 2 -0.5f) * margin;
 
-
-        float f = 120;
         //初始化方块
         for(int i = 0; i < 5; i++){
             for(int j = 0; j < 8; j ++){
@@ -100,9 +100,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
                 squares[i*8+j].set(
                         x_offset + step * j ,
                         1 - step * (i+1),
-                        8.0f+ (j+0.2f*i),
-                        margin * ratio_of_block_and_margin,
-                       0.5f * (i+j)
+                        margin * ratio_of_block_and_margin
                 );
 
                 circles[i*8+j] = new GLCircle(10);
@@ -112,18 +110,27 @@ public class GLRender implements GLSurfaceView.Renderer  {
 
               characters_x[i * 8 + j] = (x_offset + step * j +0.15f * step)  *0.5f;
               characters_y[i * 8 + j] = (1 - step * (i+1) - 0.05f * step) * 0.5f;
-              characters_f[i * 8 + j] = 8.0f+ (j+0.2f*i);
-              characters_p[i * 8 + j] = 0.5f * (i+j);
 
+              frequency[i * 8 + j] = 8.0f+ (j+0.2f*i);
+              phase[i * 8 + j] = 0.5f * (i+j);
             }
         }
     }
 
-    private void drawFlashingBLocks(){
+    private void drawFlashingBLocks(long time){
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         //依次绘制
         for(int i = 0; i< 40 ; i++){
-            squares[i].draw(ratio, beginTime, (i == redBlock));
+            float k;
+            if(time > beginTime){
+                long t = time - beginTime;
+                k = (float)(
+                        Math.sin((phase[i] + t * 0.001 * 0.001 * 0.002  * frequency[i]
+                        ) * 3.1415926f) + 1) /2;
+            }else{
+                k = 1;
+            }
+            squares[i].draw(ratio, (i == redBlock), k);
             if(i== redPot)circles[i].draw(ratio, true);
         }
         Matrix.multiplyMM(mVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
@@ -135,23 +142,21 @@ public class GLRender implements GLSurfaceView.Renderer  {
         glText.end();                                   // End Text Rendering
     }
 
-    private void drawFlashingLetters(){
+    private void drawFlashingLetters(long time){
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
         //依次绘制
         if(redPot >= 0 && redPot < 40)circles[redPot].draw(ratio, true);
-        if(redBlock >= 0 && redBlock < 40)squares[redBlock].draw(ratio, -1, true);
+        if(redBlock >= 0 && redBlock < 40)squares[redBlock].draw(ratio, true, 0);
 
         Matrix.multiplyMM(mVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
 
         // Begin Text Rendering
         glText.begin( 0.0f, 0.0f, 0.0f, 1.0f, mVPMatrix );
-        long time;
         for(int i = 0; i < 40 ; i++){
-            time = System.nanoTime();
             if(time > beginTime){
                 long t = time - beginTime;
                 float k = (float)(
-                        Math.sin((characters_p[i] + t * 0.001 * 0.001 * 0.002  * characters_f[i]
+                        Math.sin((phase[i] + t * 0.001 * 0.001 * 0.002  * frequency[i]
                                 ) * 3.1415926f) + 1) /2;
                 glText.setColor(k,k,k,0);
             }else{
@@ -163,6 +168,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
     }
 
     public void onDrawFrame(GL10 unused) {
+        long t1 = System.nanoTime();
 
         if(render_noting){
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
@@ -170,12 +176,15 @@ public class GLRender implements GLSurfaceView.Renderer  {
         }
 
         if(has_blocks){
-            drawFlashingBLocks();
+            drawFlashingBLocks(t1);
         }else{
             buttons[36] = " ";
             //The real space (ASCII 0x20) in the font we use is a hollow square.
-            drawFlashingLetters();
+            drawFlashingLetters(t1);
         }
+        long t2 = System.nanoTime();
+
+        Log.d("TIME",  "from" + t1 + " to" + t2 + " " + (t2-t1)/1_000 +"μs" );
     }
 
     public void onSurfaceChanged(GL10 unused, int width, int height) { //		gl.glViewport( 0, 0, width, height );
