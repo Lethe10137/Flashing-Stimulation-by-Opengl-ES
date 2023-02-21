@@ -40,7 +40,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
 
     private float ratio = 1.0f;
     private long beginTime = 0;
-    private long last_log = 0;
+
 
     private int redBlock = 18;
     private int redPot = 8;
@@ -56,7 +56,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
     public int getRedPot() {return redPot;}
     public void setBeginTime(long time){
         beginTime = time;
-        if(last_log == 0)last_log = time + 1_100_000_000;
+        Log.d("开始闪烁时间:", "" + beginTime);
     }
     public long getBeginTime(){return beginTime;}
     public void setDoBlocksFlash(boolean doBlocksFlash){has_blocks = doBlocksFlash;}
@@ -171,7 +171,7 @@ public class GLRender implements GLSurfaceView.Renderer  {
     }
 
 
-
+    private int log_remain = 500;
     public void onDrawFrame(GL10 unused) {
         long t1 = System.nanoTime();
 
@@ -188,7 +188,13 @@ public class GLRender implements GLSurfaceView.Renderer  {
             drawFlashingLetters(t1);
         }
 
-        if(t1 > last_log && t1 > beginTime)return;
+//        if(t1 > last_log && t1 > beginTime)return;
+        if(log_remain > 0){
+            log_remain -= 1;
+        }else{
+            return;
+        }
+
         long t2 = System.nanoTime();
 
         Log.d("TIME",  "from" + t1 + " to" + t2 + " " + (t2-t1)/1_000 +"μs" );
